@@ -74,6 +74,7 @@ public class PlayerController : NetworkBehaviour
         if (IsServer)
         {
             PlayerScore.Value += points;
+            //наладить отображение
         }
     }
 

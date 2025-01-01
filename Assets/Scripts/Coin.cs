@@ -4,16 +4,22 @@ using UnityEngine;
 
 public class Coin : NetworkBehaviour
 {
+    public int points = 5; 
+
     private void OnTriggerEnter(Collider other)
     {
-        if (IsServer && other.CompareTag("Player"))
+        if (!IsServer) return;
+
+        
+        var player = other.GetComponent<PlayerController>();
+        if (player != null)
         {
-            PlayerController player = other.GetComponent<PlayerController>();
-            if (player != null)
-            {
-                player.AddScore(5);
-                GetComponent<NetworkObject>().Despawn();
-            }
+
+            player.AddScore(points);
+
+            
+            GetComponent<NetworkObject>().Despawn();
+            Destroy(gameObject);
         }
     }
 }
