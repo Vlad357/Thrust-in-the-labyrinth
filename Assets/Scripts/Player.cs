@@ -1,12 +1,15 @@
 using System;
+using TMPro;
 using Unity.Netcode;
 using UnityEngine;
+using UnityEngine.SocialPlatforms.Impl;
 
-public class PlayerController : NetworkBehaviour
+public class Player : NetworkBehaviour
 {
     private InputSystem_Actions _inputActions;
 
     public NetworkVariable<int> PlayerScore = new NetworkVariable<int>();
+    public TextMeshProUGUI textScore;
 
     [Header("Movement Settings")]
     public float baseSpeed = 5f;
@@ -18,6 +21,10 @@ public class PlayerController : NetworkBehaviour
     private float currentSpeed;
     private float speedMultiplier = 1f;
     private float accelerationTimer = 0f;
+
+    private const int WinningScore = 100;
+
+    [SerializeField]private Vector3 assignedSpawner;
 
     private Camera mainCamera;
 
@@ -43,22 +50,26 @@ public class PlayerController : NetworkBehaviour
         _rigidbody = GetComponent<Rigidbody>();
         mainCamera = Camera.main;
 
-        if (mainCamera != null)
-        {
-            CameraFollow cameraFollow = mainCamera.GetComponent<CameraFollow>();
-            if (cameraFollow == null)
-            {
-                cameraFollow = mainCamera.gameObject.AddComponent<CameraFollow>();
-            }
-            cameraFollow.target = transform; 
-        }
+        
 
         if (IsClient)
         {
+            textScore = GameObject.Find("ScorePlayerUI").GetComponent<TextMeshProUGUI>();
+
             PlayerScore.OnValueChanged += (oldValue, newValue) =>
             {
-                Debug.Log($"Player score updated: {newValue}");
+                textScore.text = newValue.ToString();
             };
+
+            if (mainCamera != null)
+            {
+                CameraFollow cameraFollow = mainCamera.GetComponent<CameraFollow>();
+                if (cameraFollow == null)
+                {
+                    cameraFollow = mainCamera.gameObject.AddComponent<CameraFollow>();
+                }
+                cameraFollow.target = transform;
+            }
         }
     }
 
@@ -74,7 +85,38 @@ public class PlayerController : NetworkBehaviour
         if (IsServer)
         {
             PlayerScore.Value += points;
-            //наладить отображение
+
+            if (PlayerScore.Value >= WinningScore)
+            {
+                GameManager.Instance.DeclareWinner(this.OwnerClientId);
+            }
+        }
+    }
+
+    public void ResetScore()
+    {
+        if (IsServer)
+        {
+            PlayerScore.Value = 0;
+        }
+    }
+
+    [ClientRpc]
+    public void AssignSpawnerClientRpc(Vector3 spawnPoint)
+    {
+        if (IsClient)
+        {
+            assignedSpawner = spawnPoint;
+            RespawnClientRpc();
+        }
+    }
+
+    [ClientRpc]
+    public void RespawnClientRpc()
+    {
+        if (IsClient)
+        {
+            transform.position = assignedSpawner;
         }
     }
 

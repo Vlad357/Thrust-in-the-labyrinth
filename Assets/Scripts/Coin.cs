@@ -11,7 +11,7 @@ public class Coin : NetworkBehaviour
         if (!IsServer) return;
 
         
-        var player = other.GetComponent<PlayerController>();
+        var player = other.GetComponent<Player>();
         if (player != null)
         {
 
